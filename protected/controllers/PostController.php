@@ -28,7 +28,7 @@ class PostController extends Controller
 	{
 		return array(
 			array('allow',  // allow all users to access 'index' and 'view' actions.
-				'actions'=>array('index','view','ShinxSearch'),
+				'actions'=>array('index','view','SphinxSearch'),
 				'users'=>array('*'),
 			),
 			array('allow', // allow authenticated users to access all actions
@@ -131,28 +131,52 @@ class PostController extends Controller
 			'dataProvider'=>$dataProvider,
 		));
 	}
-    public function actionShinxSearch()
+    public function actionSphinxSearch()
     {
-        $searchCriteria =  new stdClass();
-        $pages = new CPagination();
-        $pages->pageSize = 10;
-        $searchCriteria->select = '*';
-//        $searchCriteria->filters = array('project_id' => $project_id);
-//        $searchCriteria->query = '@name '.$query.'*';
-        $searchCriteria->paginator = $pages;
-        $searchCriteria->groupby = ' id ';
-        $searchCriteria->orders = array('title' => 'ASC');
-        $searchCriteria->from = 'tbl_post';
-error_reporting(E_ALL);
-ini_set("display_errors", 1);
-        $resIterator = Yii::App()->search->search($searchCriteria); // interator result
-        /* OR */
-        $resArray = Yii::App()->search->searchRaw($searchCriteria); // array result
-        echo '<pre>';
-        var_dump('$resIterator='.$resIterator,'$resArray='.$resArray);
-        echo '</pre>';
-        die;
-        $this->render('index',array(
+
+        $keywords = array('test','title2','content');
+
+        // тоже массивы id'шников
+
+
+        // создаем инстанц клиента
+        $cl =Yii::App()->search;
+
+        // настройки
+        $cl->SetServer("localhost", 3312);
+        $cl->SetConnectTimeout(1);
+        $cl->SetLimits(0, 10); // постраничную навигацию организовываем тут
+        $cl->SetArrayResult (true);
+        $cl->SetRankingMode(SPH_RANK_PROXIMITY_BM25);
+        $cl->SetMatchMode(SPH_MATCH_EXTENDED);
+        // теперь запрос к демону
+        // дабы много не переписывать из предыдущего примера, был добавлен алиас
+        $select = "*, @weight AS relev";
+
+        // запрос претерпел изменения
+        // теперь он имеет вид @keywords ("Вася"|"письмо"|"Федя")
+        $query = '("'.join('"|"',$keywords).'")';
+        $query = '@title, @content '.$query;
+
+        // теперь запрос к демону
+
+        $res = $cl->Query($query, "project");
+
+
+        $arrayid=array();
+        foreach($res['matches'] as $key=>$value){
+            $arrayid[]=$value['id'];
+        }
+        $criteria=new CDbCriteria();
+        $criteria->addInCondition('id',$arrayid);
+        $dataProvider=new CActiveDataProvider('Post', array(
+            'pagination'=>array(
+                'pageSize'=>1,
+            ),
+            'totalItemCount'=>$res['total_found'],
+            'criteria'=>$criteria,
+        ));
+        $this->render('sphinxsearch',array(
                 'dataProvider'=>$dataProvider,
             ));
     }

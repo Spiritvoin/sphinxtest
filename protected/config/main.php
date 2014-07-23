@@ -75,7 +75,7 @@ return array(
         'search' => array(
             'class' => 'application.components.DGSphinxSearch',
             'server' => '127.0.0.1',
-            'port' => 9312,
+            'port' => 3312,
             'maxQueryTime' => 3000,
             'enableProfiling'=>0,
             'enableResultTrace'=>0,

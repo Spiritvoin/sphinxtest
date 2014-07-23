@@ -587,7 +587,7 @@ class SphinxClient
 			$fp = @fsockopen ( $host, $port, $errno, $errstr );
 		else
 			$fp = @fsockopen ( $host, $port, $errno, $errstr, $this->_timeout );
-		
+
 		if ( !$fp )
 		{
 			if ( $this->_path )
